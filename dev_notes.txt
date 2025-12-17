@@ -1,0 +1,5 @@
+start app
+    uvicorn src.app.main:app --reload 
+    (uvicorn: is ASGI server implementation, src.app.main:app tells uvicorn to look in srtc/app/main for obj named app, reload makes server restart when code changes)
+
+    streamlit run src/app/ui.py

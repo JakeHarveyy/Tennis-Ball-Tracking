@@ -1,9 +1,14 @@
 from pydantic import BaseModel
 from typing import Optional
 
-class TrackingResponse(BaseModel):
-    filename: str
-    tracker_type: str
+class TaskResponse(BaseModel):
+    task_id: str
     status: str
     message: str
-    download_url: Optional[str] = None
+
+class TaskStatus(BaseModel):
+    status: str
+    filename: str
+    tracker: str
+    result_url: Optional[str] = None
+    error: Optional[str] = None

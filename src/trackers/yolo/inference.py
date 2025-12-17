@@ -31,7 +31,8 @@ def run_yolo(video_path: str, model_path: str, output_path: str, conf_threshold:
     cap.release()
 
     # Initialize video writer
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    # Use vp09 (VP9) which is browser-friendly and doesn't require external DLLs on Windows
+    fourcc = cv2.VideoWriter_fourcc(*'vp09')
     video_writer = cv2.VideoWriter(str(output_path), fourcc, fps, (width, height))
     
     # Run tracking

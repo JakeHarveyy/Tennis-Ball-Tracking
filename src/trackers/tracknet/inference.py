@@ -62,7 +62,8 @@ def run_tracknet(video_path: str, model_path: str, output_video_path: str = None
     # Initialize video writer if output path is provided
     video_writer = None
     if output_video_path:
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        # Use vp09 (VP9) which is browser-friendly and doesn't require external DLLs on Windows
+        fourcc = cv2.VideoWriter_fourcc(*'vp09')
         video_writer = cv2.VideoWriter(str(output_video_path), fourcc, fps, (original_width, original_height))
 
     # Initialize frame buffer and prediction storage

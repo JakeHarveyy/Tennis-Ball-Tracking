@@ -1,9 +1,11 @@
 import shutil
 import os
+import uuid
+from typing import Dict
 from fastapi import FastAPI, UploadFile, File, Form, BackgroundTasks, HTTPException
 from fastapi.responses import FileResponse
 from pathlib import Path
-from .schemas import TrackingResponse
+from .schemas import TaskResponse, TaskStatus
 
 # Import our engines from Phase 1
 from src.trackers.tracknet.inference import run_tracknet
@@ -18,15 +20,18 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Define paths to your weights (Update these paths to match your actual file locations!)
-TRACKNET_WEIGHTS = "src/trackers/tracknet/weights/model_best.pth.tar" 
+TRACKNET_WEIGHTS = "src/trackers/tracknet/weights/model_best.pth.tar"  #weights on dads GPU pc
 YOLO_WEIGHTS = "src/trackers/yolo/weights/best.pt"
 
-def process_video_task(video_path: Path, output_path: Path, tracker_type: str):
+# In-memory job store
+tasks: Dict[str, dict] = {}
+
+def process_video_task(task_id: str, video_path: Path, output_path: Path, tracker_type: str):
     """
     This function runs in the background.
     """
     try:
-        print(f"Starting {tracker_type} on {video_path}")
+        print(f"Starting {tracker_type} on {video_path} (Task ID: {task_id})")
         
         if tracker_type == "tracknet":
             # We assume run_tracknet saves the video to output_path
@@ -36,12 +41,15 @@ def process_video_task(video_path: Path, output_path: Path, tracker_type: str):
             run_yolo(str(video_path), YOLO_WEIGHTS, str(output_path))
             
         print(f"Finished processing {video_path}")
+        tasks[task_id]["status"] = "completed"
+        tasks[task_id]["result_url"] = f"/download/{output_path.name}"
         
     except Exception as e:
         print(f"Error processing video: {e}")
-        # In a real app, you'd update a database status here
+        tasks[task_id]["status"] = "failed"
+        tasks[task_id]["error"] = str(e)
 
-@app.post("/predict", response_model=TrackingResponse)
+@app.post("/predict", response_model=TaskResponse)
 async def predict(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
@@ -51,25 +59,39 @@ async def predict(
     if tracker not in ["yolo", "tracknet"]:
         raise HTTPException(status_code=400, detail="Invalid tracker type. Choose 'yolo' or 'tracknet'")
 
-    # 2. Save the uploaded file temporarily
-    input_path = UPLOAD_DIR / file.filename
-    output_filename = f"processed_{file.filename}"
+    # 2. Generate Task ID
+    task_id = str(uuid.uuid4())
+    
+    # 3. Save the uploaded file temporarily
+    input_path = UPLOAD_DIR / f"{task_id}_{file.filename}"
+    output_filename = f"processed_{task_id}_{file.filename}"
     output_path = OUTPUT_DIR / output_filename
     
     with open(input_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # 3. Add processing to background tasks
-    background_tasks.add_task(process_video_task, input_path, output_path, tracker)
-
-    # 4. Return immediate response
-    return {
-        "filename": file.filename,
-        "tracker_type": tracker,
+    # 4. Initialize Task Status
+    tasks[task_id] = {
         "status": "processing",
-        "message": "Video uploaded successfully. Processing started in background.",
-        "download_url": f"/download/{output_filename}"
+        "filename": file.filename,
+        "tracker": tracker
     }
+
+    # 5. Add processing to background tasks
+    background_tasks.add_task(process_video_task, task_id, input_path, output_path, tracker)
+
+    # 6. Return Task ID
+    return {
+        "task_id": task_id,
+        "status": "processing",
+        "message": "Video uploaded successfully. Processing started in background."
+    }
+
+@app.get("/tasks/{task_id}", response_model=TaskStatus)
+async def get_task_status(task_id: str):
+    if task_id not in tasks:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return tasks[task_id]
 
 @app.get("/download/{filename}")
 async def download_video(filename: str):
