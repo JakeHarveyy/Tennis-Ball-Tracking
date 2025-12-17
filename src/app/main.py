@@ -19,7 +19,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Define paths to your weights (Update these paths to match your actual file locations!)
 TRACKNET_WEIGHTS = "src/trackers/tracknet/weights/model_best.pth.tar" 
-YOLO_WEIGHTS = "runs/detect/train/weights/best.pt"
+YOLO_WEIGHTS = "src/trackers/yolo/weights/best.pt"
 
 def process_video_task(video_path: Path, output_path: Path, tracker_type: str):
     """
