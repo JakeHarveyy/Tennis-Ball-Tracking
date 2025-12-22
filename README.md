@@ -9,9 +9,8 @@ pinned: false
 
 # Tennis Ball Tracking
 
-# [Live Inference](https://huggingface.co/spaces/JakeHarveyy/tennis-ball-tracker)
-
 ![Tennis Ball Tracking Visualization](attatchments/readMeTitlePic.png)
+## [Live Inference](https://huggingface.co/spaces/JakeHarveyy/tennis-ball-tracker)
 
 A computer vision application designed to detect and track tennis balls in video footage. This project leverages deep learning models—specifically **YOLOv8** and **TrackNet**—to provide accurate tracking of small, fast-moving objects in sports scenarios.
 
