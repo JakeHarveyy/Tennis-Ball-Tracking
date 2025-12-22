@@ -1,3 +1,12 @@
+---
+title: Tennis Ball Tracker
+emoji: 🎾
+colorFrom: green
+colorTo: yellow
+sdk: docker
+pinned: false
+---
+
 # Tennis Ball Tracking
 
 This project implements various methods for tracking tennis balls in video footage, including classical computer vision techniques, Kalman filtering, and deep learning approaches using YOLO and TrackNet models.

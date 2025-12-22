@@ -6,10 +6,26 @@ sys.path.append(str(root_path))
 import streamlit as st
 import requests
 import time
+import subprocess
+import os
 from src import config
 
 # Configuration
 API_URL = config.API_URL
+
+def convert_to_h264(input_path, output_path):
+    """
+    Converts a video to H.264 format (browser compatible) using FFmpeg.
+    """
+    # ffmpeg -i input.mp4 -vcodec libx264 -acodec aac output.mp4
+    command = [
+        'ffmpeg', '-y',
+        '-i', input_path,
+        '-vcodec', 'libx264',
+        '-pix_fmt', 'yuv420p', # Critical for browser playback
+        output_path
+    ]
+    subprocess.run(command, check=True)
 
 st.set_page_config(page_title="Tennis Tracker", page_icon="🎾")
 st.title("🎾 Tennis Ball Tracker")
@@ -67,10 +83,45 @@ if uploaded_file is not None:
 
                 # Construct Download URL
                 result_url = f"{API_URL}{status_data['result_url']}"
+                
+                # Download the video content
+                with st.spinner("Downloading and converting video for browser playback..."):
+                    try:
+                        # 1. Download from API
+                        video_res = requests.get(result_url)
+                        video_res.raise_for_status()
+                        
+                        # 3. Convert to H.264
+                        # We use a unique filename to avoid conflicts if multiple users are running
+                        import uuid
+                        unique_id = str(uuid.uuid4())
+                        temp_input = f"temp_in_{unique_id}.mp4"
+                        temp_output = f"temp_out_{unique_id}.mp4"
 
-                # Display Result
-                st.subheader("Tracking Result")
-                st.video(result_url)
+                        with open(temp_input, "wb") as f:
+                            f.write(video_res.content)
+
+                        convert_to_h264(temp_input, temp_output)
+                        
+                        # 4. Display Result
+                        st.subheader("Tracking Result")
+                        if os.path.exists(temp_output):
+                            with open(temp_output, 'rb') as video_file:
+                                video_bytes = video_file.read()
+                                st.video(video_bytes)
+                        else:
+                            st.error("Video conversion failed: Output file not created.")
+                            
+                        # Cleanup
+                        if os.path.exists(temp_input):
+                            os.remove(temp_input)
+                        if os.path.exists(temp_output):
+                            os.remove(temp_output)
+                            
+                    except Exception as e:
+                        st.error(f"Error displaying video: {e}")
+                        # Fallback to link
+                        st.markdown(f"[Download Result Video]({result_url})")
                 break
             
             elif status == "failed":

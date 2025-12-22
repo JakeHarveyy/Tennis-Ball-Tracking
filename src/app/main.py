@@ -87,6 +87,6 @@ async def get_task_status(task_id: str):
 @app.get("/download/{filename}")
 async def download_video(filename: str):
     file_path = config.OUTPUT_DIR / filename
-    if file_path.exists():
-        return FileResponse(file_path, media_type="video/mp4", filename=filename)
-    return {"error": "File not found or processing not complete."}
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(file_path, media_type="video/mp4", filename=filename)
