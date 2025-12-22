@@ -5,23 +5,14 @@ from typing import Dict
 from fastapi import FastAPI, UploadFile, File, Form, BackgroundTasks, HTTPException
 from fastapi.responses import FileResponse
 from pathlib import Path
-from .schemas import TaskResponse, TaskStatus
 
-# Import our engines from Phase 1
-from src.trackers.tracknet.inference import run_tracknet
+# IMPORT THE CONFIG
+from src import config
 from src.trackers.yolo.inference import run_yolo
+from src.trackers.tracknet.inference import run_tracknet
+from src.app.schemas import TaskResponse, TaskStatus
 
 app = FastAPI(title="Tennis Ball Tracker API")
-
-# Setup directories for storage
-UPLOAD_DIR = Path("data/uploads")
-OUTPUT_DIR = Path("data/outputs")
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-
-# Define paths to your weights (Update these paths to match your actual file locations!)
-TRACKNET_WEIGHTS = "src/trackers/tracknet/weights/model_best.pth.tar"  #weights on dads GPU pc
-YOLO_WEIGHTS = "src/trackers/yolo/weights/best.pt"
 
 # In-memory job store
 tasks: Dict[str, dict] = {}
@@ -35,10 +26,10 @@ def process_video_task(task_id: str, video_path: Path, output_path: Path, tracke
         
         if tracker_type == "tracknet":
             # We assume run_tracknet saves the video to output_path
-            run_tracknet(str(video_path), TRACKNET_WEIGHTS, str(output_path))
+            run_tracknet(str(video_path), config.TRACKNET_MODEL_PATH, str(output_path))
         elif tracker_type == "yolo":
             # We assume run_yolo saves the video to output_path
-            run_yolo(str(video_path), YOLO_WEIGHTS, str(output_path))
+            run_yolo(str(video_path), config.YOLO_MODEL_PATH, str(output_path))
             
         print(f"Finished processing {video_path}")
         tasks[task_id]["status"] = "completed"
@@ -63,9 +54,9 @@ async def predict(
     task_id = str(uuid.uuid4())
     
     # 3. Save the uploaded file temporarily
-    input_path = UPLOAD_DIR / f"{task_id}_{file.filename}"
+    input_path = config.UPLOAD_DIR / f"{task_id}_{file.filename}"
     output_filename = f"processed_{task_id}_{file.filename}"
-    output_path = OUTPUT_DIR / output_filename
+    output_path = config.OUTPUT_DIR / output_filename
     
     with open(input_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -95,7 +86,7 @@ async def get_task_status(task_id: str):
 
 @app.get("/download/{filename}")
 async def download_video(filename: str):
-    file_path = OUTPUT_DIR / filename
+    file_path = config.OUTPUT_DIR / filename
     if file_path.exists():
         return FileResponse(file_path, media_type="video/mp4", filename=filename)
     return {"error": "File not found or processing not complete."}

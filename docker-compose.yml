@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  # Service 1: The Backend API
+  api:
+    build: .
+    command: uvicorn src.app.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    volumes:
+      # We mount the models folder so we don't have to copy 500MB files into the image
+      - ./models:/app/models
+      # We mount the output folder so you can see the results on your host machine
+      - ./outputs:/app/outputs
+    environment:
+      - YOLO_MODEL_PATH=/app/models/yolo/best.pt
+      - TRACKNET_MODEL_PATH=/app/models/tracknet/best.pt
+
+  # Service 2: The Frontend UI
+  ui:
+    build: .
+    command: streamlit run src/app/ui.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    environment:
+      # The UI needs to know where the API is.
+      # In Docker, we use the service name "api" as the hostname.
+      - API_HOST=api
+      - API_PORT=8000
+    depends_on:
+      - api

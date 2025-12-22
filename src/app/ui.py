@@ -1,9 +1,15 @@
+import sys
+from pathlib import Path
+root_path = Path(__file__).resolve().parent.parent.parent
+sys.path.append(str(root_path))
+
 import streamlit as st
 import requests
 import time
+from src import config
 
 # Configuration
-API_URL = "http://localhost:8000"
+API_URL = config.API_URL
 
 st.set_page_config(page_title="Tennis Tracker", page_icon="🎾")
 st.title("🎾 Tennis Ball Tracker")
