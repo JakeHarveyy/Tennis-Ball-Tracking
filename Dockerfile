@@ -30,7 +30,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY --chown=user . .
 
 # 7. Create necessary directories with correct permissions
-RUN mkdir -p uploads data/outputs && chmod 777 uploads data/outputs
+RUN mkdir -p data/uploads data/outputs && chmod -R 777 data
 
 # 8. Expose Ports
 # Hugging Face Spaces expects 7860. Heroku ignores EXPOSE but provides $PORT.

@@ -17,6 +17,7 @@ def run_yolo(video_path: str, model_path: str, output_path: str, conf_threshold:
     Returns:
         list: List of trajectory points (x, y)
     """
+    print(f"Loading YOLO model from {model_path}")
     model = YOLO(model_path)
     
     # Open video to get properties
@@ -40,8 +41,9 @@ def run_yolo(video_path: str, model_path: str, output_path: str, conf_threshold:
     
     trajectory_points = []
     
-    print(f"Processing video with YOLO: {video_path}")
+    print(f"Processing video with YOLO: {total_frames} frames")
     
+    frame_count = 0
     for r in tqdm(results, total=total_frames, desc="YOLO Inference"):
         annotated_frame = r.plot()
         
@@ -63,9 +65,13 @@ def run_yolo(video_path: str, model_path: str, output_path: str, conf_threshold:
                 cv2.line(annotated_frame, 
                         trajectory_points[i - 1], 
                         trajectory_points[i], 
-                        (0, 0, 255), 3)
+                        (255, 0, 0), 3)
         
         video_writer.write(annotated_frame)
+        frame_count += 1
+
+        if frame_count % 100 == 0:
+            print(f"YOLO: Processed {frame_count}/{total_frames} frames")
         
     video_writer.release()
     return trajectory_points

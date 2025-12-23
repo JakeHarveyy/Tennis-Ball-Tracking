@@ -25,7 +25,12 @@ def convert_to_h264(input_path, output_path):
         '-pix_fmt', 'yuv420p', # Critical for browser playback
         output_path
     ]
-    subprocess.run(command, check=True)
+    try:
+        subprocess.run(command, check=True, capture_output=True)
+    except FileNotFoundError:
+        raise RuntimeError("FFmpeg not found. Please install FFmpeg and add it to your PATH to enable in-browser video playback.")
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"FFmpeg conversion failed: {e.stderr.decode()}")
 
 st.set_page_config(page_title="Tennis Tracker", page_icon="🎾")
 st.title("🎾 Tennis Ball Tracker")
@@ -110,7 +115,7 @@ if uploaded_file is not None:
                                 video_bytes = video_file.read()
                                 st.video(video_bytes)
                         else:
-                            st.error("Video conversion failed: Output file not created.")
+                            st.warning("Video conversion failed. You can still download the result below.")
                             
                         # Cleanup
                         if os.path.exists(temp_input):
@@ -119,9 +124,9 @@ if uploaded_file is not None:
                             os.remove(temp_output)
                             
                     except Exception as e:
-                        st.error(f"Error displaying video: {e}")
+                        st.error(f"Error processing video for display: {e}")
                         # Fallback to link
-                        st.markdown(f"[Download Result Video]({result_url})")
+                        st.markdown(f"### [Download Result Video]({result_url})")
                 break
             
             elif status == "failed":

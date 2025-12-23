@@ -41,6 +41,7 @@ def run_tracknet(video_path: str, model_path: str, output_video_path: str = None
         pd.DataFrame: DataFrame containing tracking predictions
     """
     # Load model
+    print(f"Loading TrackNet model from {model_path}")
     model = TrackNet().to(DEVICE)
     if not Path(model_path).exists():
         raise FileNotFoundError(f"Model file not found at {model_path}")
@@ -69,6 +70,7 @@ def run_tracknet(video_path: str, model_path: str, output_video_path: str = None
     # Initialize frame buffer and prediction storage
     frame_buffer = collections.deque(maxlen=3)
     predictions_list = []
+    trajectory_points = []
     frame_id_counter = 0
 
     print(f"Processing video: {total_frames} frames, {original_width}x{original_height}")
@@ -120,17 +122,26 @@ def run_tracknet(video_path: str, model_path: str, output_video_path: str = None
                     'tracknet_h': 20
                 })
                 
+                trajectory_points.append((int(center_x), int(center_y)))
+                
                 if video_writer:
                      cv2.circle(frame, (int(center_x), int(center_y)), int(radius), (0, 0, 255), 2)
 
         predictions_list.append(current_pred)
         
         if video_writer:
+            if len(trajectory_points) > 1:
+                for i in range(1, len(trajectory_points)):
+                    cv2.line(frame, trajectory_points[i - 1], trajectory_points[i], (0, 0, 255), 3)
             video_writer.write(frame)
             
         frame_id_counter += 1
         pbar.update(1)
+
+        if frame_id_counter % 100 == 0:
+            print(f"TrackNet: Processed {frame_id_counter}/{total_frames} frames")
     
+    pbar.close()
     cap.release()
     if video_writer:
         video_writer.release()

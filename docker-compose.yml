@@ -11,10 +11,13 @@ services:
       # We mount the models folder so we don't have to copy 500MB files into the image
       - ./models:/app/models
       # We mount the output folder so you can see the results on your host machine
-      - ./outputs:/app/outputs
+      - ./data/outputs:/app/data/outputs
+      - ./data/uploads:/app/data/uploads
     environment:
-      - YOLO_MODEL_PATH=/app/models/yolo/best.pt
-      - TRACKNET_MODEL_PATH=/app/models/tracknet/best.pt
+      - YOLO_MODEL_PATH=/app/models/yolo/yolo_best.pt
+      - TRACKNET_MODEL_PATH=/app/models/tracknet/tracknet_best.pt
+      - UPLOAD_DIR=/app/data/uploads
+      - OUTPUT_DIR=/app/data/outputs
 
   # Service 2: The Frontend UI
   ui:

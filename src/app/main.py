@@ -25,15 +25,19 @@ def process_video_task(task_id: str, video_path: Path, output_path: Path, tracke
         print(f"Starting {tracker_type} on {video_path} (Task ID: {task_id})")
         
         if tracker_type == "tracknet":
-            # We assume run_tracknet saves the video to output_path
+            #saves the video to output_path
             run_tracknet(str(video_path), config.TRACKNET_MODEL_PATH, str(output_path))
         elif tracker_type == "yolo":
-            # We assume run_yolo saves the video to output_path
+            #saves the video to output_path
             run_yolo(str(video_path), config.YOLO_MODEL_PATH, str(output_path))
             
         print(f"Finished processing {video_path}")
         tasks[task_id]["status"] = "completed"
-        tasks[task_id]["result_url"] = f"/download/{output_path.name}"
+        
+        # Encode the filename for the URL
+        import urllib.parse
+        encoded_filename = urllib.parse.quote(output_path.name)
+        tasks[task_id]["result_url"] = f"/download/{encoded_filename}"
         
     except Exception as e:
         print(f"Error processing video: {e}")
