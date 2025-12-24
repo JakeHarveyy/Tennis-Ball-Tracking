@@ -32,8 +32,63 @@ def convert_to_h264(input_path, output_path):
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"FFmpeg conversion failed: {e.stderr.decode()}")
 
-st.set_page_config(page_title="Tennis Tracker", page_icon="🎾")
+st.set_page_config(page_title="Tennis Tracker", page_icon="🎾", layout="wide")
 st.title("🎾 Tennis Ball Tracker")
+
+# Example Section
+st.subheader("Project Demo")
+st.markdown("Here is an example of the raw input and the resulting tracking outputs.")
+
+example_dir = root_path / "data" / "test_clip" / "example"
+raw_clip = example_dir / "Clip1.mp4"
+tracknet_clip = example_dir / "Clip1_tracknet_trajectory.mp4"
+yolo_clip = example_dir / "Clip1_yolo_trajectory.mp4"
+
+def get_display_video_path(video_path):
+    """Checks for H.264 version, converts if missing, returns path string."""
+    if not video_path.exists():
+        return None
+    
+    # Define the target H.264 path
+    h264_path = video_path.with_name(f"{video_path.stem}_h264{video_path.suffix}")
+    
+    if not h264_path.exists():
+        # Convert if it doesn't exist
+        try:
+            convert_to_h264(str(video_path), str(h264_path))
+        except Exception as e:
+            st.error(f"Could not convert {video_path.name}: {e}")
+            return None
+            
+    return str(h264_path)
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.markdown("### Raw Input")
+    v_path = get_display_video_path(raw_clip)
+    if v_path:
+        st.video(v_path, autoplay=True, loop=True, muted=True)
+    else:
+        st.error("File not found")
+
+with col2:
+    st.markdown("### TrackNet Output")
+    v_path = get_display_video_path(tracknet_clip)
+    if v_path:
+        st.video(v_path, autoplay=True, loop=True, muted=True)
+    else:
+        st.error("File not found")
+
+with col3:
+    st.markdown("### YOLO Output")
+    v_path = get_display_video_path(yolo_clip)
+    if v_path:
+        st.video(v_path, autoplay=True, loop=True, muted=True)
+    else:
+        st.error("File not found")
+
+st.divider()
 
 # sidebar for inputs
 with st.sidebar:
